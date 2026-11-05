@@ -150,3 +150,93 @@ kbd {
 #restart-btn:hover {
   background: #9bbdff;
 }
+
+/* ---- Theme selector ---- */
+.theme-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.theme-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  background: #22223a;
+  color: #aaa;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.theme-btn:hover {
+  background: #2a2a4a;
+}
+
+.theme-btn.active {
+  border-color: #7aa2f7;
+  color: #7aa2f7;
+  box-shadow: 0 0 6px rgba(122,162,247,0.3);
+}
+
+/* ---- Theme: Neon ---- */
+body.theme-neon {
+  background: #000;
+}
+
+body.theme-neon #board {
+  background: #000;
+  border-color: #333;
+  box-shadow: 0 0 60px rgba(0,255,255,0.15), 0 0 120px rgba(255,0,255,0.08);
+}
+
+body.theme-neon #next-canvas {
+  background: #000;
+  border-color: #333;
+}
+
+/* ---- Theme: Pastel ---- */
+body.theme-pastel {
+  background: #fdf6f0;
+  color: #4a3f35;
+}
+
+body.theme-pastel #board {
+  background: #fff8ee;
+  border-color: #e8ddd0;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+body.theme-pastel #next-canvas {
+  background: #fff8ee;
+  border-color: #e8ddd0;
+}
+
+body.theme-pastel .panel {
+  background: transparent;
+}
+
+body.theme-pastel .label {
+  color: #b09a85;
+}
+
+body.theme-pastel .value {
+  color: #7c6bc4;
+}
+
+/* ---- Theme: Pixel Art ---- */
+body.theme-pixel {
+  background: #1a1a2e;
+}
+
+body.theme-pixel #board {
+  background: #0f0f1a;
+  border-color: #333366;
+  box-shadow: none;
+}
+
+body.theme-pixel #next-canvas {
+  background: #0f0f1a;
+  border-color: #333366;
+}

@@ -28,6 +28,85 @@ const PIECES = [
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
+// ---- Themes ----
+const THEMES = {
+  retro: {
+    name: 'Retro',
+    drawBlock: function(ctx, x, y, ci, sz) {
+      const color = COLORS[ci];
+      ctx.globalAlpha = arguments[4] ?? 1;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * sz + 1, y * sz + 1, sz - 2, sz - 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(x * sz + 1, y * sz + 1, sz - 2, 4);
+      ctx.globalAlpha = 1;
+    },
+    gridColor: '#22222e'
+  },
+  neon: {
+    name: 'Neon',
+    drawBlock: function(ctx, x, y, ci, sz) {
+      const color = COLORS[ci];
+      ctx.globalAlpha = arguments[4] ?? 1;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * sz + 2, y * sz + 2, sz - 4, sz - 4);
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    },
+    gridColor: '#1a1a2e'
+  },
+  pastel: {
+    name: 'Pastel',
+    drawBlock: function(ctx, x, y, ci, sz) {
+      const color = COLORS[ci];
+      ctx.globalAlpha = arguments[4] ?? 1;
+      const pad = 2, r = 6;
+      const rx = x * sz + pad, ry = y * sz + pad;
+      const rw = sz - pad * 2, rh = sz - pad * 2;
+      ctx.beginPath();
+      ctx.moveTo(rx + r, ry);
+      ctx.lineTo(rx + rw - r, ry);
+      ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + r);
+      ctx.lineTo(rx + rw, ry + rh - r);
+      ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - r, ry + rh);
+      ctx.lineTo(rx + r, ry + rh);
+      ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - r);
+      ctx.lineTo(rx, ry + r);
+      ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    },
+    gridColor: '#e8ddd0'
+  },
+  pixel: {
+    name: 'Pixel Art',
+    drawBlock: function(ctx, x, y, ci, sz) {
+      const color = COLORS[ci];
+      ctx.globalAlpha = arguments[4] ?? 1;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * sz + 1, y * sz + 1, sz - 2, sz - 2);
+      const seed = ci * 1000 + x * 31 + y * 67;
+      let s = seed;
+      function nextRand() { s = (s * 16807) % 2147483647; return s; }
+      for (let i = 0; i < 12; i++) {
+        const px = x * sz + ((nextRand() % (sz - 6)) + 3);
+        const py = y * sz + ((nextRand() % (sz - 6)) + 3);
+        ctx.fillStyle = nextRand() > 1073741823 ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        ctx.fillRect(px, py, 3, 3);
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x * sz + 1.5, y * sz + 1.5, sz - 3, sz - 3);
+      ctx.globalAlpha = 1;
+    },
+    gridColor: '#333366'
+  }
+};
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
@@ -41,6 +120,9 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let currentTheme = 'retro';
+const savedTheme = localStorage.getItem('tetris_theme');
+if (savedTheme && THEMES[savedTheme]) currentTheme = savedTheme;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -158,18 +240,11 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+  THEMES[currentTheme].drawBlock.call(null, context, x, y, colorIndex, size, alpha);
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = THEMES[currentTheme].gridColor;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -299,6 +374,26 @@ document.addEventListener('keydown', e => {
   updateHUD();
 });
 
+// ---- Theme switching ----
+function selectTheme(name) {
+  if (!THEMES[name]) return;
+  currentTheme = name;
+  localStorage.setItem('tetris_theme', name);
+  ['theme-neon','theme-pastel','theme-pixel','theme-retro'].forEach(c => document.body.classList.remove(c));
+  if (name !== 'retro') document.body.classList.add('theme-' + name);
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === name);
+  });
+}
+
 restartBtn.addEventListener('click', init);
+
+// Theme buttons
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectTheme(btn.dataset.theme));
+});
+
+// Initialize theme
+selectTheme(currentTheme);
 
 init();
