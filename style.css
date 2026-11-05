@@ -150,3 +150,71 @@ kbd {
 #restart-btn:hover {
   background: #9bbdff;
 }
+
+/* ---- Menu buttons (for high scores UI) ---- */
+.menu-btn {
+  background: #2a2a4a;
+  color: #e0e0e0;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.menu-btn:hover {
+  background: #7aa2f7;
+  color: #0f0f17;
+  border-color: #7aa2f7;
+}
+
+/* ---- Name input ---- */
+.name-input {
+  padding: 8px 12px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  background: #1a1a25;
+  color: #e0e0e0;
+  outline: none;
+  width: 180px;
+}
+
+.name-input:focus {
+  border-color: #7aa2f7;
+  box-shadow: 0 0 6px rgba(122,162,247,0.3);
+}
+
+/* ---- High scores table ---- */
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.scores-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #2a2a3a;
+}
+
+.rank {
+  color: #555570;
+  font-weight: 600;
+  width: 30px;
+  text-align: right;
+}
+
+.player-name {
+  color: #e0e0e0;
+  text-align: left;
+}
+
+.score-value {
+  color: #7aa2f7;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  text-align: right;
+}

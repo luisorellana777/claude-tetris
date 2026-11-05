@@ -41,6 +41,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let maxCombo = 0, currentCombo = 0, linesClearedThisGame = 0;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -104,6 +105,9 @@ function clearLines() {
     }
   }
   if (cleared) {
+    currentCombo++;
+    if (currentCombo > maxCombo) maxCombo = currentCombo;
+    linesClearedThisGame += cleared;
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
@@ -147,6 +151,7 @@ function spawn() {
   if (collide(current.shape, current.x, current.y)) {
     endGame();
   }
+  currentCombo = 0;
   drawNext();
 }
 
@@ -218,12 +223,79 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
+function getHighScores() {
+  try { return JSON.parse(localStorage.getItem('tetris_scores')) || []; }
+  catch { return []; }
+}
+
+function saveScore(scoreVal, name) {
+  const scores = getHighScores();
+  scores.push({ score: scoreVal, name: name || 'Anónimo', date: Date.now(), maxCombo, linesClearedThisGame });
+  scores.sort((a, b) => b.score - a.score);
+  if (scores.length > 5) scores.length = 5;
+  localStorage.setItem('tetris_scores', JSON.stringify(scores));
+  return scores;
+}
+
+function getMinTopScore() {
+  const s = getHighScores();
+  return s.length < 5 ? -1 : s[s.length - 1].score;
+}
+
+function showHighScores(el) {
+  const scores = getHighScores();
+  if (scores.length === 0) { el.innerHTML = '<p style="color:inherit;opacity:.4;font-size:12px;">Sin records</p>'; return; }
+  let html = '<table class="scores-table">';
+  scores.forEach((s, i) => {
+    html += `<tr><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}</td></tr>`;
+  });
+  html += '</table>';
+  el.innerHTML = html;
+}
+
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
+  const minTop = getMinTopScore();
+  const scores = getHighScores();
+  const qualifies = scores.length < 5 || score >= minTop;
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  let html = `<p style="font-family:'Courier New',monospace;font-size:18px;color:#7aa2f7;">${score.toLocaleString()}</p>`;
+  if (qualifies) {
+    html += '<input id="name-input" type="text" placeholder="Tu nombre" maxlength="15" class="name-input">';
+    html += '<button id="save-score-btn" class="menu-btn">Guardar record</button>';
+  } else {
+    html += `<p style="font-size:12px;color:#888;">Max combo: ${maxCombo} | Líneas: ${linesClearedThisGame}</p>`;
+    html += '<button id="view-scores-btn" class="menu-btn">Ver records</button>';
+  }
+  overlayScore.innerHTML = html;
   overlay.classList.remove('hidden');
+  if (qualifies) {
+    const nameInput = document.getElementById('name-input');
+    if (nameInput) { setTimeout(() => nameInput.focus(), 100); }
+    document.getElementById('save-score-btn').addEventListener('click', () => {
+      saveScore(score, nameInput.value.trim());
+      showHighScores(document.getElementById('high-scores-list'));
+      overlayTitle.textContent = 'RECORDS';
+      let shtml = '<table class="scores-table">';
+      getHighScores().forEach((s, i) => {
+        shtml += `<tr><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}</td></tr>`;
+      });
+      shtml += '</table>';
+      overlayScore.innerHTML = shtml;
+      overlayScore.innerHTML += '<button id="back-btn" class="menu-btn">Volver</button>';
+    });
+  } else {
+    document.getElementById('view-scores-btn').addEventListener('click', () => {
+      let shtml = '<table class="scores-table">';
+      getHighScores().forEach((s, i) => {
+        shtml += `<tr><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}</td></tr>`;
+      });
+      shtml += '</table>';
+      overlayScore.innerHTML = shtml;
+      overlayScore.innerHTML += '<button id="back-btn" class="menu-btn">Volver</button>';
+    });
+  }
 }
 
 function togglePause() {
@@ -300,5 +372,7 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+
+document.getElementById('high-scores-list') && showHighScores(document.getElementById('high-scores-list'));
 
 init();
