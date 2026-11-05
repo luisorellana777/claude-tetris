@@ -25,6 +25,17 @@
           <span class="value" id="level">1</span>
         </div>
 
+        <!-- Theme selector -->
+        <div class="panel-section themes">
+          <span class="label">THEMES</span>
+          <div class="theme-selector">
+            <button class="theme-btn active" data-theme="retro" title="Retro">R</button>
+            <button class="theme-btn" data-theme="neon" title="Neon">N</button>
+            <button class="theme-btn" data-theme="pastel" title="Pastel">P</button>
+            <button class="theme-btn" data-theme="pixel" title="Pixel Art">X</button>
+          </div>
+        </div>
+
         <div class="panel-section">
           <span class="label">NEXT</span>
           <canvas id="next-canvas" width="120" height="120"></canvas>
@@ -39,6 +50,12 @@
             <li><kbd>Space</kbd> caída</li>
             <li><kbd>P</kbd> pausa</li>
           </ul>
+        </div>
+
+        <!-- High scores start panel -->
+        <div class="panel-section" id="high-scores-start" style="margin-top:8px;">
+          <span class="label">RECORDS</span>
+          <div id="high-scores-list"></div>
         </div>
       </aside>
     </div>
