@@ -215,6 +215,22 @@ body.theme-pixel #next-canvas {
   color: #e57373;
 }
 
+#overlay-title.pause {
+  color: #7aa2f7;
+}
+
+.final-score {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #7aa2f7;
+}
+
+.final-stats {
+  font-size: 12px;
+  color: #888;
+}
+
 #overlay-score {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
