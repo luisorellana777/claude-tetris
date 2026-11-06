@@ -425,3 +425,66 @@ body.theme-pixel #next-canvas {
 #high-scores-start .score-value {
   font-size: 11px;
 }
+
+/* New record row highlight */
+.scores-table tr.row-new td {
+  background: rgba(122, 162, 247, 0.15);
+}
+
+.scores-table tr.row-new .score-value {
+  color: #ffd54f;
+}
+
+/* Best combo / max lines stats */
+.stats-line {
+  font-size: 12px;
+  color: #aaa;
+  text-align: center;
+}
+
+#high-scores-start .stats-line {
+  font-size: 11px;
+  text-align: left;
+}
+
+/* New record badge on game over */
+.new-record {
+  color: #ffd54f;
+  font-weight: 700;
+  letter-spacing: 1px;
+  animation: new-record-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes new-record-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* No scores placeholder */
+.no-scores {
+  color: inherit;
+  opacity: 0.4;
+  font-size: 12px;
+}
+
+/* Small reset link in start panel */
+.reset-link {
+  background: none;
+  border: none;
+  color: #555570;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  padding: 2px 0;
+}
+
+.reset-link:hover {
+  color: #e57373;
+}
+
+/* Danger variant of menu button (reset in overlay) */
+.menu-btn.danger:hover {
+  background: #e57373;
+  border-color: #e57373;
+  color: #0f0f17;
+}

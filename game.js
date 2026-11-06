@@ -382,12 +382,25 @@ function getHighScores() {
 }
 
 function saveScore(scoreVal, name) {
+  const entry = {
+    id: Date.now() + '-' + Math.floor(Math.random() * 1e6),
+    score: scoreVal,
+    name: name || 'Anónimo',
+    date: Date.now(),
+    maxCombo,
+    linesClearedThisGame
+  };
   const scores = getHighScores();
-  scores.push({ score: scoreVal, name: name || 'Anónimo', date: Date.now(), maxCombo, linesClearedThisGame });
+  scores.push(entry);
   scores.sort((a, b) => b.score - a.score);
   if (scores.length > 5) scores.length = 5;
   localStorage.setItem('tetris_scores', JSON.stringify(scores));
-  return scores;
+  return entry;
+}
+
+function resetScores() {
+  localStorage.removeItem('tetris_scores');
+  showHighScoresDisplay(document.getElementById('high-scores-list'));
 }
 
 function getMinTopScore() {
@@ -395,16 +408,56 @@ function getMinTopScore() {
   return s.length < 5 ? -1 : s[s.length - 1].score;
 }
 
-function showHighScoresDisplay(el) {
+function getRankForScore(scoreVal) {
+  let rank = 1;
+  for (const s of getHighScores()) if (s.score > scoreVal) rank++;
+  return rank;
+}
+
+function getBestStats() {
+  let bestCombo = 0, maxLines = 0;
+  for (const s of getHighScores()) {
+    if ((s.maxCombo || 0) > bestCombo) bestCombo = s.maxCombo;
+    if ((s.linesClearedThisGame || 0) > maxLines) maxLines = s.linesClearedThisGame;
+  }
+  return { bestCombo, maxLines };
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function buildScoresTable(highlightId) {
   const scores = getHighScores();
-  if (scores.length === 0) { el.innerHTML = '<p style="color:inherit;opacity:.4;font-size:12px;">Sin records</p>'; return; }
+  if (scores.length === 0) {
+    return '<table class="scores-table"><tr><td style="text-align:center;color:inherit;opacity:.4;">Sin records aún</td></tr></table>';
+  }
   let html = '<table class="scores-table">';
   scores.forEach((s, i) => {
+    const rowCls = s.id === highlightId ? ' class="row-new"' : '';
     const stars = i === 0 ? ' ★' : '';
-    html += `<tr><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}</td></tr>`;
+    html += `<tr${rowCls}><td class="rank">${i + 1}.</td><td class="player-name">${escapeHtml(s.name)}</td><td class="score-value">${s.score.toLocaleString()}${stars}</td></tr>`;
   });
-  html += '</table>';
-  el.innerHTML = html;
+  return html + '</table>';
+}
+
+function buildStatsLine() {
+  const { bestCombo, maxLines } = getBestStats();
+  if (bestCombo === 0 && maxLines === 0) return '';
+  return `<p class="stats-line">🔥 Mejor combo: ${bestCombo} · Líneas máx: ${maxLines}</p>`;
+}
+
+function showHighScoresDisplay(el) {
+  if (!el) return;
+  if (getHighScores().length === 0) {
+    el.innerHTML = '<p class="no-scores">Sin records</p>';
+    return;
+  }
+  el.innerHTML = buildScoresTable() + buildStatsLine() +
+    '<button class="reset-link" id="panel-reset-btn">↺ Borrar records</button>';
+  document.getElementById('panel-reset-btn').addEventListener('click', () => {
+    if (confirm('¿Borrar todos los records?')) resetScores();
+  });
 }
 
 // ---- Theme switching ----
@@ -445,27 +498,42 @@ function hideOverlay() {
   overlayScore.innerHTML = '';
 }
 
-function showScoresOverlay() {
+function showScoresOverlay(newId) {
   pauseMenuOpen = true;
   overlayView = 'scores';
   overlayTitle.textContent = 'RECORDS';
   overlayTitle.classList.add('pause');
-  let html = '<div class="menu-items">';
-  html += '<table class="scores-table">';
+  let html = '';
+
   const scores = getHighScores();
   if (scores.length === 0) {
-    html += '<tr><td style="text-align:center;color:inherit;opacity:.4;">Sin records aún</td></tr>';
+    html += '<table class="scores-table"><tr><td style="text-align:center;color:inherit;opacity:.4;">Sin records aún</td></tr></table>';
   } else {
+    html += '<table class="scores-table">';
     scores.forEach((s, i) => {
-      const stars = i === 0 ? ' ★' : '';
-      html += `<tr><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}${stars}</td></tr>`;
+      const isTop = i === 0;
+      const isNew = s.id === newId ? ' new-record' : '';
+      html += `<tr class="${isTop ? 'top-record' : ''}${isNew}"><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}${isTop ? ' ★' : ''}</td></tr>`;
     });
+    html += '</table>';
   }
-  html += '</table>';
+  html += buildStatsLine();
+  html += '<button id="reset-scores-btn" class="menu-btn danger">🗑 Borrar records</button>';
   html += '<button id="back-btn" class="menu-btn">← Volver</button>';
   html += '</div>';
   overlayScore.innerHTML = html;
   overlay.classList.remove('hidden');
+
+  document.getElementById('reset-scores-btn').addEventListener('click', () => {
+    if (confirm('¿Borrar todos los records?')) {
+      resetScores();
+      showScoresOverlay();
+    }
+  });
+  document.getElementById('back-btn').addEventListener('click', () => {
+    if (gameOver) showGameOverScreen(false);
+    else togglePause();
+  });
 }
 
 // ---- Game over with high score capture ----
@@ -499,14 +567,49 @@ function renderGameOver(withForm) {
   }
 }
 
-function endGame() {
-  gameOver = true;
-  pauseMenuOpen = false;
-  cancelAnimationFrame(animId);
+// ---- Game over with high score capture ----
+function showGameOverScreen(showNameInput) {
+  pauseMenuOpen = true;
   const minTop = getMinTopScore();
   const scores = getHighScores();
   const qualifies = scores.length < 5 || score >= minTop;
-  renderGameOver(qualifies);
+  const askName = showNameInput && qualifies;
+
+  overlayTitle.textContent = 'GAME OVER';
+  let html = `<p style="font-family:'Courier New',monospace;font-size:18px;color:#7aa2f7;">${score.toLocaleString()}</p>`;
+  html += `<p class="stats-line">🔥 Combo: ${maxCombo} · Líneas: ${linesClearedThisGame}</p>`;
+
+  if (askName) {
+    const rank = getRankForScore(score);
+    html += `<p class="new-record">🎉 ¡Nuevo record! Puesto #${rank}</p>`;
+    html += '<input id="name-input" type="text" placeholder="Tu nombre" maxlength="15" class="name-input">';
+    html += '<button id="save-score-btn" class="menu-btn">💾 Guardar record</button>';
+  } else {
+    html += '<button id="view-scores-btn" class="menu-btn">🏆 Ver records</button>';
+  }
+
+  overlayScore.innerHTML = html;
+  overlay.classList.remove('hidden');
+
+  if (askName) {
+    const nameInput = document.getElementById('name-input');
+    setTimeout(() => nameInput && nameInput.focus(), 100);
+    nameInput.addEventListener('keydown', e => { if (e.code === 'Enter') document.getElementById('save-score-btn').click(); });
+    document.getElementById('save-score-btn').addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      const entry = saveScore(score, name);
+      showHighScoresDisplay(document.getElementById('high-scores-list'));
+      showScoresOverlay(entry.id);
+    });
+  } else {
+    document.getElementById('view-scores-btn').addEventListener('click', () => showScoresOverlay());
+  }
+}
+
+function endGame() {
+  gameOver = true;
+  cancelAnimationFrame(animId);
+  showGameOverScreen(true);
 }
 
 // ---- Initial level ----
