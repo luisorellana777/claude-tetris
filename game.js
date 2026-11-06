@@ -130,10 +130,9 @@ const levelEl = document.getElementById('level');
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
-const restartBtn = document.getElementById('restart-btn');
-
-let board, permanent, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, permanent, current, next, score, lines, level, baseLevel, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let pauseMenuOpen = false;
+let overlayView = null; // 'pause' | 'scores' | null
 let initialLevel = 1;
 const savedInitial = localStorage.getItem('tetris_initial_level');
 if (savedInitial) { const parsed = parseInt(savedInitial, 10); if (!isNaN(parsed)) initialLevel = parsed; }
@@ -229,7 +228,7 @@ function clearLines() {
     linesClearedThisGame += cleared;
     lines += cleared;
     score += LINE_SCORES[cleared] * level;
-    level = Math.floor(lines / 10) + 1;
+    level = baseLevel + Math.floor(lines / 10);
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   } else {
@@ -381,7 +380,9 @@ function selectTheme(name) {
 // ---- Pause menu ----
 function showPauseMenu() {
   pauseMenuOpen = true;
+  overlayView = 'pause';
   overlayTitle.textContent = 'PAUSA';
+  overlayTitle.classList.add('pause');
   let html = '<div class="menu-items">';
   html += '<button id="resume-btn" class="menu-btn">▶ Reanudar</button>';
   html += '<button id="pause-restart-btn" class="menu-btn">↻ Reiniciar</button>';
@@ -391,88 +392,79 @@ function showPauseMenu() {
   html += '<button id="scores-btn" class="menu-btn">🏆 Ver records</button>';
   html += '</div>';
   overlayScore.innerHTML = html;
+  overlay.classList.remove('hidden');
 }
 
 function hideOverlay() {
   pauseMenuOpen = false;
+  overlayView = null;
+  overlayTitle.classList.remove('pause');
   overlay.classList.add('hidden');
   overlayScore.innerHTML = '';
 }
 
 function showScoresOverlay() {
   pauseMenuOpen = true;
+  overlayView = 'scores';
   overlayTitle.textContent = 'RECORDS';
+  overlayTitle.classList.add('pause');
   let html = '<div class="menu-items">';
-  html += '<div id="overlay-scores"><table class="scores-table">';
+  html += '<table class="scores-table">';
   const scores = getHighScores();
   if (scores.length === 0) {
     html += '<tr><td style="text-align:center;color:inherit;opacity:.4;">Sin records aún</td></tr>';
   } else {
     scores.forEach((s, i) => {
       const stars = i === 0 ? ' ★' : '';
-      html += `<tr><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}</td></tr>`;
+      html += `<tr><td class="rank">${i + 1}.</td><td class="player-name">${s.name}</td><td class="score-value">${s.score.toLocaleString()}${stars}</td></tr>`;
     });
   }
-  html += '</table></div>';
+  html += '</table>';
   html += '<button id="back-btn" class="menu-btn">← Volver</button>';
   html += '</div>';
   overlayScore.innerHTML = html;
+  overlay.classList.remove('hidden');
 }
 
 // ---- Game over with high score capture ----
+function renderGameOver(withForm) {
+  overlayView = null;
+  overlayTitle.textContent = 'GAME OVER';
+  overlayTitle.classList.remove('pause');
+
+  let html = `<p class="final-score">${score.toLocaleString()}</p>`;
+  if (withForm) {
+    html += '<input id="name-input" type="text" placeholder="Tu nombre" maxlength="15" class="name-input">';
+    html += '<button id="save-score-btn" class="menu-btn">💾 Guardar record</button>';
+  }
+  html += `<p class="final-stats">Máx combo: ${maxCombo} · Líneas: ${linesClearedThisGame}</p>`;
+  html += '<button id="view-scores-btn" class="menu-btn">🏆 Ver records</button>';
+  html += '<button id="restart-btn" class="menu-btn">↻ Reiniciar</button>';
+  overlayScore.innerHTML = html;
+  overlay.classList.remove('hidden');
+
+  document.getElementById('restart-btn').addEventListener('click', () => init(initialLevel));
+  document.getElementById('view-scores-btn').addEventListener('click', showScoresOverlay);
+
+  if (withForm) {
+    const nameInput = document.getElementById('name-input');
+    setTimeout(() => nameInput.focus(), 100);
+    nameInput.addEventListener('keydown', e => { if (e.code === 'Enter') document.getElementById('save-score-btn').click(); });
+    document.getElementById('save-score-btn').addEventListener('click', () => {
+      saveScore(score, nameInput.value.trim());
+      showScoresOverlay();
+    });
+  }
+}
+
 function endGame() {
   gameOver = true;
+  pauseMenuOpen = false;
   cancelAnimationFrame(animId);
   const minTop = getMinTopScore();
   const scores = getHighScores();
   const qualifies = scores.length < 5 || score >= minTop;
-
-  overlayTitle.textContent = 'GAME OVER';
-  let html = `<p style="font-family:'Courier New',monospace;font-size:18px;color:#7aa2f7;">${score.toLocaleString()}</p>`;
-
-  if (qualifies) {
-    html += '<input id="name-input" type="text" placeholder="Tu nombre" maxlength="15" class="name-input">';
-    html += '<button id="save-score-btn" class="menu-btn">💾 Guardar record</button>';
-  } else {
-    html += `<p style="font-size:12px;color:#888;">Max combo: ${maxCombo} | Líneas: ${linesClearedThisGame}</p>`;
-    html += '<button id="view-scores-btn" class="menu-btn">🏆 Ver records</button>';
-  }
-
-  overlayScore.innerHTML = html;
-  overlay.classList.remove('hidden');
-
-  if (qualifies) {
-    const nameInput = document.getElementById('name-input');
-    if (nameInput) {
-      setTimeout(() => nameInput.focus(), 100);
-      nameInput.addEventListener('keydown', e => { if (e.code === 'Enter') document.getElementById('save-score-btn').click(); });
-    }
-    document.getElementById('save-score-btn').addEventListener('click', () => {
-      const name = nameInput.value.trim();
-      saveScore(score, name);
-      showScoresOverlay();
-    });
-  } else {
-    document.getElementById('view-scores-btn').addEventListener('click', showScoresOverlay);
-  }
-
-  // Back button from game-over scores overlay (gameOver blocks togglePause)
-  setTimeout(() => {
-    const backBtn = document.getElementById('back-btn');
-    if (backBtn && gameOver) {
-      backBtn.addEventListener('click', () => {
-        pauseMenuOpen = false;
-        overlay.classList.add('hidden');
-        overlayScore.innerHTML = '';
-        // Show restart option since game is over
-        overlayTitle.textContent = 'GAME OVER';
-        overlayScore.innerHTML = `<p style="font-family:'Courier New',monospace;font-size:18px;color:#7aa2f7;">${score.toLocaleString()}</p>`;
-        overlayScore.innerHTML += '<button id="restart-btn" class="menu-btn">Reiniciar</button>';
-        overlay.classList.remove('hidden');
-        document.getElementById('restart-btn').addEventListener('click', () => init(initialLevel));
-      });
-    }
-  }, 50);
+  renderGameOver(qualifies);
 }
 
 // ---- Initial level ----
@@ -480,12 +472,14 @@ function setInitialLevel(delta) {
   if (isNaN(initialLevel)) initialLevel = 1;
   initialLevel = Math.max(1, Math.min(99, initialLevel + delta));
   localStorage.setItem('tetris_initial_level', initialLevel);
-  document.getElementById('level-display').textContent = initialLevel;
+  const el = document.getElementById('level-display');
+  if (el) el.textContent = initialLevel;
 }
 
 // ---- Game loop & init ----
 function togglePause() {
   if (gameOver) return;
+  if (overlayView === 'scores') { showPauseMenu(); return; } // Esc/P desde records → volver al menú
   if (pauseMenuOpen) {
     hideOverlay();
     paused = false;
@@ -522,61 +516,62 @@ function loop(ts) {
 }
 
 function init(startLevel) {
-  const lvl = startLevel || initialLevel;
+  const lvl = Math.max(1, startLevel || initialLevel);
   createBoard();
   score = 0;
   lines = 0;
   level = lvl;
+  baseLevel = lvl;
   maxCombo = 0;
   currentCombo = 0;
   linesClearedThisGame = 0;
   paused = false;
   gameOver = false;
-  pauseMenuOpen = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (lvl - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
-  overlay.classList.add('hidden');
-  overlayScore.innerHTML = '';
+  hideOverlay();
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 // ---- Event listeners ----
 document.addEventListener('keydown', e => {
+  // Let typing work in the high-score name input
+  if (e.target && e.target.id === 'name-input' && e.code !== 'Enter') return;
+
   if (e.code === 'KeyP' || e.code === 'Escape') {
     e.preventDefault();
     togglePause();
     return;
   }
-  if (pauseMenuOpen) {
+
+  if (pauseMenuOpen && !gameOver) {
     if (e.code === 'Enter' || e.code === 'Space') {
-      const resumeBtn = document.getElementById('resume-btn');
-      if (resumeBtn) resumeBtn.click();
+      const btn = document.getElementById('resume-btn') || document.getElementById('back-btn');
+      if (btn) btn.click();
       return;
     }
     if (e.code === 'KeyR') {
-      const restartBtn2 = document.getElementById('pause-restart-btn');
-      if (restartBtn2) restartBtn2.click();
+      const restartBtn = document.getElementById('pause-restart-btn');
+      if (restartBtn) restartBtn.click();
       return;
     }
     if (e.code === 'KeyL' || e.code === 'ArrowRight') { setInitialLevel(1); return; }
     if (e.code === 'KeyK' || e.code === 'ArrowLeft') { setInitialLevel(-1); return; }
-    if (e.code === 'Escape' || e.code === 'KeyP') { hideOverlay(); return; }
     if (e.code === 'KeyC') {
       const info = document.getElementById('controls-info');
       if (info) info.classList.toggle('hidden');
       return;
     }
-    if (e.code === 'KeyS' || e.code === 'ArrowDown') {
-      const scoresBtn = document.getElementById('scores-btn');
-      if (scoresBtn) showScoresOverlay();
+    if ((e.code === 'KeyS' || e.code === 'ArrowDown') && overlayView === 'pause') {
+      showScoresOverlay();
       return;
     }
-    return; // block game inputs during pause menu
+    return; // block game inputs while the pause menu is open
   }
   if (paused || gameOver) return;
 
@@ -603,8 +598,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-restartBtn.addEventListener('click', () => init(initialLevel));
-
 // Theme buttons
 document.querySelectorAll('.theme-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTheme(btn.dataset.theme));
@@ -618,7 +611,7 @@ overlayScore.addEventListener('click', e => {
   else if (e.target.id === 'level-plus') setInitialLevel(1);
   else if (e.target.id === 'controls-btn') { const info = document.getElementById('controls-info'); if (info) info.classList.toggle('hidden'); }
   else if (e.target.id === 'scores-btn') showScoresOverlay();
-  else if (e.target.id === 'back-btn') togglePause();
+  else if (e.target.id === 'back-btn') { if (gameOver) renderGameOver(false); else showPauseMenu(); }
 });
 
 // Initialize

@@ -40,8 +40,9 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Pieza fantasma** (_ghost piece_): muestra dónde aterrizará la pieza actual.
 - **Vista previa** de la siguiente pieza.
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
-- **Niveles** que aumentan cada 10 líneas y aceleran la caída.
-- **Pausa** y **Game Over** con opción de reinicio.
+- **Niveles** que aumentan cada 10 líneas y aceleran la caída, con **nivel inicial** configurable.
+- **Menú de pausa** completo (Reanudar / Reiniciar / Ver controles / Nivel inicial) que bloquea la entrada del juego mientras está abierto.
+- **Game Over** con captura de record y opción de reinicio.
 
 ---
 
@@ -84,7 +85,19 @@ Después abre `http://localhost:8000` en el navegador.
 | `↑` o `X` | Rotar la pieza en sentido horario |
 | `↓`       | Soft drop (bajar más rápido)      |
 | `Espacio` | Hard drop (caída instantánea)     |
-| `P`       | Pausar / reanudar                 |
+| `P` / `Esc` | Abrir / cerrar el menú de pausa |
+
+### Menú de pausa
+
+Con el menú abierto (tecla `P` o `Esc`) los controles del juego quedan bloqueados para evitar movimientos accidentales al reanudar. Opciones disponibles:
+
+| Opción          | Descripción                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| **Reanudar**    | Vuelve a la partida (tecla `Enter` o `Espacio`).                   |
+| **Reiniciar**   | Nueva partida sin recargar la página (tecla `R`).                  |
+| **Ver controles** | Muestra la lista de teclas dentro del menú (tecla `C`).          |
+| **Nivel inicial** | `−` / `+` para elegir el nivel de la próxima partida (también `←`/`→` o `K`/`L`). Se guarda en `localStorage`. |
+| **Ver records** | Muestra la tabla de mejores puntuaciones (tecla `S` o `↓`).        |
 
 ---
 
@@ -115,7 +128,7 @@ Contiene toda la lógica del juego. A grandes rasgos:
 - **Game loop** (`loop`): basado en `requestAnimationFrame`, acumula el tiempo transcurrido y baja la pieza una fila cuando se supera `dropInterval`.
 - **Limpieza de líneas** (`clearLines`): recorre el tablero de abajo hacia arriba; cada fila completa se elimina y se inserta una vacía en la cima.
 - **Puntuación**: usa la tabla clásica `[0, 100, 300, 500, 800]` multiplicada por el nivel actual; el hard drop suma 2 puntos por celda recorrida y el soft drop 1 punto por fila.
-- **Nivel y velocidad**: el nivel sube cada 10 líneas; la velocidad de caída se calcula como `max(100, 1000 − (level − 1) × 90)` milisegundos.
+- **Nivel y velocidad**: el nivel de partida se elige en el menú de pausa (persistido en `localStorage`); sube 1 nivel cada 10 líneas, y la velocidad de caída se calcula como `max(100, 1000 − (level − 1) × 90)` milisegundos — la velocidad inicial también parte de ese nivel.
 - **Ghost piece** (`ghostY`): proyecta la posición final de la pieza actual hacia abajo y la dibuja con `globalAlpha = 0.2`.
 
 ### Flujo del juego
