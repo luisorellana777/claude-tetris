@@ -4,7 +4,8 @@ const COLS = 10;
 const ROWS = 20;
 const BLOCK = 30;
 
-const COLORS = [
+// Paletas por skin (índice 0 reservado para celdas vacías)
+const RETRO_COLORS = [
   null,
   '#4dd0e1', // I - cyan
   '#ffd54f', // O - yellow
@@ -16,6 +17,47 @@ const COLORS = [
   '#b0bec5', // NUT piece body
   '#7a8fa0', // permanent nut frame (inamovible)
 ];
+
+const NEON_COLORS = [
+  null,
+  '#00ffff', // I - cyan
+  '#ffee00', // O - yellow
+  '#ff44ff', // T - magenta
+  '#44ff44', // S - green
+  '#ff2244', // Z - red
+  '#2288ff', // J - blue
+  '#ff9922', // L - orange
+  '#baffee', // NUT piece body
+  '#8899bb', // permanent nut frame (inamovible)
+];
+
+const PASTEL_COLORS = [
+  null,
+  '#a8d8e8', // I - cyan
+  '#f7e3a9', // O - yellow
+  '#d8bfe0', // T - purple
+  '#b5dfc0', // S - green
+  '#f0bcbc', // Z - red
+  '#b4c3e8', // J - indigo
+  '#f6d2a8', // L - orange
+  '#e6ddd2', // NUT piece body
+  '#c9d2da', // permanent nut frame (inamovible)
+];
+
+const PIXEL_COLORS = [
+  null,
+  '#00c3ff', // I - cyan
+  '#ffd23e', // O - yellow
+  '#c760d8', // T - purple
+  '#5fd35f', // S - green
+  '#ff5050', // Z - red
+  '#5060e8', // J - indigo
+  '#ff8c1e', // L - orange
+  '#b8c4d0', // NUT piece body
+  '#7a90a8', // permanent nut frame (inamovible)
+];
+
+const COLORS = RETRO_COLORS;
 
 const PIECES = [
   null,
@@ -36,7 +78,7 @@ const THEMES = {
   retro: {
     name: 'Retro',
     drawBlock: function(ctx, x, y, ci, sz) {
-      const color = COLORS[ci];
+      const color = RETRO_COLORS[ci];
       ctx.globalAlpha = arguments[4] ?? 1;
       ctx.fillStyle = color;
       ctx.fillRect(x * sz + 1, y * sz + 1, sz - 2, sz - 2);
@@ -59,7 +101,7 @@ const THEMES = {
   neon: {
     name: 'Neon',
     drawBlock: function(ctx, x, y, ci, sz) {
-      const color = COLORS[ci];
+      const color = NEON_COLORS[ci];
       ctx.globalAlpha = arguments[4] ?? 1;
       ctx.shadowColor = color;
       ctx.shadowBlur = 8;
@@ -73,7 +115,7 @@ const THEMES = {
   pastel: {
     name: 'Pastel',
     drawBlock: function(ctx, x, y, ci, sz) {
-      const color = COLORS[ci];
+      const color = PASTEL_COLORS[ci];
       ctx.globalAlpha = arguments[4] ?? 1;
       const pad = 2, r = 6;
       const rx = x * sz + pad, ry = y * sz + pad;
@@ -98,7 +140,7 @@ const THEMES = {
   pixel: {
     name: 'Pixel Art',
     drawBlock: function(ctx, x, y, ci, sz) {
-      const color = COLORS[ci];
+      const color = PIXEL_COLORS[ci];
       ctx.globalAlpha = arguments[4] ?? 1;
       ctx.fillStyle = color;
       ctx.fillRect(x * sz + 1, y * sz + 1, sz - 2, sz - 2);
